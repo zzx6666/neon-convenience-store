@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#04090c">
+  <meta name="description" content="宵町三丁目的雨夜便利店，一段可进入的电影场景。">
+  <title>日々屋 · 雨夜街角</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f3ecdc;
+      --ink-soft: rgba(235, 240, 232, 0.78);
+      --ink-faint: rgba(222, 232, 226, 0.64);
+      --teal: #77d4c8;
+      --amber: #ffc276;
+      --line: rgba(229, 239, 232, 0.18);
+      --panel: rgba(4, 10, 13, 0.46);
+      --bg: #04090c;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Helvetica Neue", "Hiragino Sans", "Yu Gothic UI", "Microsoft YaHei", sans-serif;
+      touch-action: none;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    button { font: inherit; }
+    ::selection { background: var(--amber); color: #0b1518; }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      opacity: 0;
+      transform: scale(1.015);
+      transition: opacity 1.4s var(--ease-out), transform 2.2s var(--ease-out);
+    }
+    body.is-ready #app { opacity: 1; transform: scale(1); }
+    #app::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(2, 6, 9, 0.46) 0%, transparent 26%, transparent 68%, rgba(2, 6, 9, 0.72) 100%),
+        linear-gradient(90deg, rgba(2, 6, 9, 0.34) 0%, transparent 34%, transparent 72%, rgba(2, 6, 9, 0.22) 100%);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      touch-action: none;
+    }
+
+    .ui {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(20px, 3.2vw, 48px);
+    }
+    .ui button,
+    .ui a { pointer-events: auto; }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      opacity: 0;
+      transform: translateY(-12px);
+      transition: opacity 1s var(--ease-out) 0.55s, transform 1s var(--ease-out) 0.55s;
+    }
+    body.is-ready .topbar { opacity: 1; transform: none; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand__mark {
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "Songti SC", serif;
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      white-space: nowrap;
+    }
+    .brand__rule {
+      width: 44px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--ink-soft), transparent);
+    }
+    .brand__meta {
+      color: var(--ink-faint);
+      font-size: 0.7rem;
+      line-height: 1.55;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink-soft);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .status__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+    .status__time {
+      margin-left: 10px;
+      padding-left: 14px;
+      border-left: 1px solid var(--line);
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hero {
+      position: absolute;
+      right: clamp(20px, 3vw, 44px);
+      bottom: clamp(104px, 12vh, 128px);
+      max-width: min(25vw, 350px);
+      text-align: right;
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 1.2s var(--ease-out) 0.8s, transform 1.2s var(--ease-out) 0.8s;
+    }
+    body.is-ready .hero { opacity: 1; transform: none; }
+    .hero h1 {
+      margin: 0;
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "Songti SC", serif;
+      font-size: clamp(3.6rem, 5.6vw, 5.6rem);
+      font-weight: 600;
+      line-height: 0.82;
+      letter-spacing: -0.04em;
+      text-wrap: balance;
+      text-shadow: 0 8px 42px rgba(0, 0, 0, 0.58);
+    }
+    .hero__line {
+      width: clamp(42px, 5vw, 74px);
+      height: 1px;
+      margin: clamp(10px, 1.2vw, 16px) 0 10px;
+      margin-left: auto;
+      background: linear-gradient(270deg, var(--amber), rgba(255, 194, 118, 0));
+    }
+    .hero p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "Songti SC", serif;
+      font-size: clamp(0.88rem, 1.15vw, 1.12rem);
+      letter-spacing: 0.12em;
+      line-height: 1.55;
+    }
+    .hero__en {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink-faint);
+      font-family: "Helvetica Neue", "Hiragino Sans", sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+    }
+
+    .side-meta { display: none; }
+
+    .bottombar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 1s var(--ease-out) 1s, transform 1s var(--ease-out) 1s;
+    }
+    body.is-ready .bottombar { opacity: 1; transform: none; }
+
+    .location {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      color: var(--ink-soft);
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+    .location__main {
+      color: var(--ink);
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "Songti SC", serif;
+      font-size: 0.92rem;
+      letter-spacing: 0.14em;
+    }
+    .location__sub {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink-faint);
+    }
+    .location__sub span + span::before {
+      content: "";
+      display: inline-block;
+      width: 3px;
+      height: 3px;
+      margin-right: 10px;
+      border-radius: 50%;
+      background: var(--ink-faint);
+      vertical-align: 2px;
+    }
+
+    .hint {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(88px, 11vh, 112px);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateX(-50%);
+      color: var(--ink-faint);
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      white-space: nowrap;
+      transition: opacity 0.6s ease, transform 0.6s var(--ease-out);
+    }
+    .hint::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--line));
+    }
+    .hint::after {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--line), transparent);
+    }
+    .hint.is-hidden { opacity: 0; transform: translate(-50%, 6px); }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--ink-soft);
+      cursor: pointer;
+      backdrop-filter: blur(14px) saturate(125%);
+      -webkit-backdrop-filter: blur(14px) saturate(125%);
+      transition:
+        color 0.22s ease,
+        border-color 0.22s ease,
+        background 0.22s ease,
+        transform 0.22s var(--ease-out);
+    }
+    .control:hover {
+      color: var(--ink);
+      border-color: rgba(229, 239, 232, 0.36);
+      background: rgba(10, 19, 23, 0.66);
+      transform: translateY(-1px);
+    }
+    .control:active { transform: translateY(0); }
+    .control:focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 3px;
+    }
+    .control svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+    .control__label {
+      font-size: 0.7rem;
+      letter-spacing: 0.13em;
+      white-space: nowrap;
+    }
+    .control[aria-pressed="true"] {
+      color: var(--ink);
+      border-color: rgba(119, 212, 200, 0.44);
+      background: rgba(14, 42, 42, 0.58);
+    }
+    .control[aria-pressed="true"] .control__dot {
+      background: var(--teal);
+    }
+    .control__dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--ink-faint);
+      transition: background 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 54%, rgba(17, 48, 49, 0.22), transparent 38%),
+        #04090c;
+      transition: opacity 1.05s var(--ease-out), visibility 1.05s;
+    }
+    body.is-ready .loader {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader__inner {
+      width: min(260px, 68vw);
+      text-align: center;
+    }
+    .loader__mark {
+      font-family: "Yu Mincho", "Hiragino Mincho ProN", "Songti SC", serif;
+      font-size: 1.55rem;
+      letter-spacing: 0.3em;
+      text-indent: 0.3em;
+    }
+    .loader__line {
+      position: relative;
+      height: 1px;
+      margin: 22px 0 17px;
+      overflow: hidden;
+      background: rgba(229, 239, 232, 0.12);
+    }
+    .loader__line::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, var(--teal), var(--amber), transparent);
+      transform: translateX(-100%);
+      animation: load-glow 1.5s ease-in-out infinite;
+    }
+    .loader__caption {
+      color: var(--ink-faint);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+    .noscript {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--ink-soft);
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    @keyframes load-glow {
+      0%, 100% { opacity: 0.22; }
+      50% { opacity: 0.92; }
+    }
+
+    @media (max-width: 900px) {
+      .hero { max-width: 46vw; }
+      .side-meta { display: none; }
+      .hint { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .ui { padding: 18px 16px 18px; }
+      .brand { gap: 10px; }
+      .brand__rule { width: 24px; }
+      .brand__meta { font-size: 0.7rem; letter-spacing: 0.1em; }
+      .status { gap: 7px; font-size: 0.7rem; letter-spacing: 0.08em; }
+      .status__time { margin-left: 4px; padding-left: 8px; }
+      .hero {
+        left: 16px;
+        right: 16px;
+        bottom: auto;
+        top: 10vh;
+        max-width: calc(100vw - 32px);
+        text-align: left;
+      }
+      .hero h1 {
+        font-size: clamp(3.7rem, 19vw, 4.9rem);
+        line-height: 0.84;
+      }
+      .hero__line { margin: 13px 0 11px; }
+      .hero__line {
+        margin-left: 0;
+        background: linear-gradient(90deg, var(--amber), rgba(255, 194, 118, 0));
+      }
+      .hero p { font-size: 0.78rem; letter-spacing: 0.07em; }
+      .hero__en { font-size: 0.7rem; letter-spacing: 0.12em; }
+      .hero__en { display: none; }
+      .hero p { max-width: 18rem; }
+      .bottombar { align-items: flex-end; gap: 12px; }
+      .location { gap: 5px; font-size: 0.7rem; }
+      .location__main { font-size: 0.78rem; }
+      .location__sub { display: none; }
+      .controls { gap: 6px; }
+      .control {
+        width: 38px;
+        min-height: 38px;
+        padding: 0;
+      }
+      .control__label,
+      .control__dot { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+      #app,
+      .topbar,
+      .hero,
+      .side-meta,
+      .bottombar {
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+      }
+      .loader__line::after { animation: none; opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <main id="app" aria-label="宵町三丁目雨夜便利店三维场景"></main>
+
+  <div class="ui">
+    <header class="topbar">
+      <div class="brand" aria-label="宵町三丁目">
+        <span class="brand__mark">宵町</span>
+        <span class="brand__rule" aria-hidden="true"></span>
+        <span class="brand__meta">Yoimachi<br>3-chome</span>
+      </div>
+      <div class="status">
+        <span class="status__dot" aria-hidden="true"></span>
+        <span>24H Open</span>
+        <span class="status__time" id="statusTime">23:47</span>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="sceneTitle">
+      <h1 id="sceneTitle">日々屋</h1>
+      <div class="hero__line" aria-hidden="true"></div>
+      <p>
+        雨夜街角，灯还亮着。
+        <span class="hero__en">A small light against the rain</span>
+      </p>
+    </section>
+
+    <aside class="side-meta" aria-hidden="true">
+      <span>宵町三丁目 · 雨</span>
+      <span>23:47 / 16°C</span>
+    </aside>
+
+    <div class="hint" id="sceneHint" aria-hidden="true">拖动探索 · 滚轮靠近</div>
+
+    <footer class="bottombar">
+      <div class="location">
+        <span class="location__main">宵町三丁目</span>
+        <span class="location__sub">
+          <span>雨 · 16°C</span>
+          <span>23:47</span>
+        </span>
+      </div>
+      <div class="controls" aria-label="场景控制">
+        <button class="control" id="soundToggle" type="button" aria-pressed="false" aria-label="开启雨声">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 9v6h4l5 4V5L9 9H5Z"></path>
+            <path d="M17.2 8.3a5 5 0 0 1 0 7.4"></path>
+            <path d="M19.6 5.9a8.4 8.4 0 0 1 0 12.2"></path>
+          </svg>
+          <span class="control__label">雨声</span>
+          <span class="control__dot" aria-hidden="true"></span>
+        </button>
+        <button class="control" id="driftToggle" type="button" aria-pressed="true" aria-label="关闭镜头巡游">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 11a8 8 0 1 0-2.3 5.7"></path>
+            <path d="M20 4v7h-7"></path>
+            <circle cx="12" cy="12" r="1.3"></circle>
+          </svg>
+          <span class="control__label">巡游</span>
+          <span class="control__dot" aria-hidden="true"></span>
+        </button>
+        <button class="control" id="resetView" type="button" aria-label="重置视角">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9V4h5"></path>
+            <path d="M20 9V4h-5"></path>
+            <path d="M4 15v5h5"></path>
+            <path d="M20 15v5h-5"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span class="control__label">重置</span>
+          <span class="control__dot" aria-hidden="true"></span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader__inner">
+      <div class="loader__mark">宵町</div>
+      <div class="loader__line" aria-hidden="true"></div>
+      <div class="loader__caption">正在点亮街角</div>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="noscript">这个雨夜场景需要启用 JavaScript 才能点亮。</div>
+  </noscript>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
